@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# ML Model Weights (Exceeds GitHub limit)
+best_toxicity_model/
+distilbert-toxicity-model/
+tmp_trainer/
+*.safetensors
+*.bin
+*.h5
+*.pt
+*.pth
