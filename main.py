@@ -3,58 +3,91 @@ from pydantic import BaseModel
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from contextlib import asynccontextmanager
+import json
+import os
 
-# Global variables to hold our model and tokenizer
+# Global variables to hold our model, tokenizer, and config
 model = None
 tokenizer = None
+label_names = []
+label_thresholds = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model, tokenizer
-    print("Starting up: Loading model into memory...")
-    model_path = "./best_toxicity_model"
+    global model, tokenizer, label_names, label_thresholds
+    print("Starting up: Loading model and config into memory...")
+    model_path = "./best_multilabel_model"
     
-    # Load them explicitly instead of using the black-box pipeline
+    # Load label config
+    config_path = os.path.join(model_path, "label_config.json")
+    if not os.path.exists(config_path):
+        raise RuntimeError(f"Config file not found at {config_path}. Did you run train_multilabel.py?")
+        
+    with open(config_path, "r") as f:
+        config = json.load(f)
+        label_names = config["labels"]
+        label_thresholds = config["thresholds"]
+    
+    # Load model and tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
     
-    # Put the model in evaluation mode (saves memory, disables dropout)
+    # Put the model in evaluation mode
     model.eval() 
-    print("Model loaded successfully!")
+    print("Model and config loaded successfully!")
     yield
     print("Shutting down: Clearing memory...")
 
-app = FastAPI(lifespan=lifespan, title="Toxicity Detection API")
+app = FastAPI(lifespan=lifespan, title="Toxicity Detection API (Multi-Label)")
 
 class PredictionRequest(BaseModel):
     text: str
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "model": "distilbert-toxicity-custom-inference"}
+    return {"status": "healthy", "model": "distilbert-toxicity-multilabel"}
 
 @app.post("/predict")
 def predict(request: PredictionRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty.")
     
-    # 1. Tokenize the text into PyTorch tensors
+    # 1. Tokenize
     inputs = tokenizer(request.text, return_tensors="pt", truncation=True, max_length=128)
     
-    # 2. Mentor Hack: Manually strip out the problematic 'token_type_ids' if they exist!
     if "token_type_ids" in inputs:
         del inputs["token_type_ids"]
     
-    # 3. Run Inference without tracking gradients (saves massive memory)
+    # 2. Run Inference
     with torch.no_grad():
         outputs = model(**inputs)
         
-    # 4. Convert raw math logits into human-readable percentages (0.0 to 1.0)
-    probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
-    toxic_prob = probabilities[0][1].item()
+    # 3. Apply Sigmoid for independent multi-label probabilities
+    probabilities = torch.sigmoid(outputs.logits)[0].tolist()
+    
+    # 4. Map probabilities to category names
+    category_scores = {label: round(prob, 4) for label, prob in zip(label_names, probabilities)}
+    
+    # 5. Routing Logic (Confidence Gate)
+    predicted_labels = [cat for cat in label_names if category_scores[cat] > label_thresholds[cat]]
+    max_score = max(category_scores.values())
+    
+    if any(category_scores[cat] > label_thresholds[cat] for cat in label_names):
+        route = "TOXIC"
+    elif max_score >= 0.30:
+        route = "AMBIGUOUS"
+    else:
+        route = "CLEAN"
+        
+    # Find dominant category
+    dominant_category = max(category_scores, key=category_scores.get)
     
     return {
         "input_text": request.text,
-        "toxic_probability": round(toxic_prob, 4),
-        "is_toxic": bool(toxic_prob >= 0.5)
+        "route": route,
+        "dominant_category": dominant_category,
+        "confidence": max_score,
+        "is_toxic": route == "TOXIC",
+        "predicted_labels": predicted_labels,
+        "category_scores": category_scores
     }

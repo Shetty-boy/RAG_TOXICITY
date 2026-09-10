@@ -3,4 +3,7 @@ uvicorn==0.24.0.post1
 transformers==4.35.2
 pydantic==2.5.2
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.1+cpu
+torch
+scikit-learn
+datasets
+accelerate
