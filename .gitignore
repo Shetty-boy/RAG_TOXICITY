@@ -12,6 +12,7 @@ ENV/
 
 # ML Model Weights (Exceeds GitHub limit)
 best_toxicity_model/
+best_multilabel_model/
 distilbert-toxicity-model/
 tmp_trainer/
 *.safetensors

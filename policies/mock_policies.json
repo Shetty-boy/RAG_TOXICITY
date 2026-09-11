@@ -1,0 +1,50 @@
+[
+  {
+    "policy_id": "TOX_001",
+    "policy_version": "v1.0",
+    "category": "toxicity",
+    "approved": true,
+    "deprecated": false,
+    "text": "General toxicity includes any language that is intentionally harmful, degrading, or overly aggressive towards others. This includes telling someone to self-harm, severe prolonged harassment, and generalized abusive statements. Such content should be removed and the user warned."
+  },
+  {
+    "policy_id": "HATE_001",
+    "policy_version": "v1.0",
+    "category": "hate_speech",
+    "approved": true,
+    "deprecated": false,
+    "text": "Hate speech is strictly prohibited. This is defined as content targeting a person or group based on protected characteristics including race, ethnicity, national origin, religion, sexual orientation, caste, sex, gender identity, or serious disease/disability. This includes using slurs, dehumanizing language (e.g. comparing groups to animals, insects, or parasites), or calls for segregation. Action: Immediate content removal and account strike."
+  },
+  {
+    "policy_id": "THREAT_001",
+    "policy_version": "v1.0",
+    "category": "threat",
+    "approved": true,
+    "deprecated": false,
+    "text": "Any credible threat of real-world violence against an individual, group of people, or specific location is banned. This includes statements of intent to harm, wishing harm, or encouraging others to commit violence. Action: Immediate ban, preservation of records, and potential escalation to law enforcement if the threat is imminent and specific."
+  },
+  {
+    "policy_id": "INSULT_001",
+    "policy_version": "v1.0",
+    "category": "insult",
+    "approved": true,
+    "deprecated": false,
+    "text": "Personal attacks and targeted insults are not allowed. While disagreement is permitted, resorting to name-calling (e.g., 'idiot', 'stupid', 'loser') or disparaging someone's intelligence or appearance creates a hostile environment. Action: Warning on first offense, followed by temporary suspension for repeated violations."
+  },
+  {
+    "policy_id": "OBSC_001",
+    "policy_version": "v1.0",
+    "category": "obscene",
+    "approved": true,
+    "deprecated": false,
+    "text": "Obscene and excessively vulgar language that is gratuitous and serves no purpose other than to shock or offend is prohibited. This includes extreme profanity. Context matters, but purely abusive obscenity will be removed. Action: Content removal."
+  },
+  {
+    "policy_id": "SEXUAL_001",
+    "policy_version": "v1.0",
+    "category": "sexual_content",
+    "approved": true,
+    "deprecated": false,
+    "text": "Unwanted sexualization, explicit sexual remarks, and sexual harassment are strictly prohibited. This includes sending unsolicited explicit content, making persistent unwanted sexual advances, or using degrading sexual terms. Action: Account suspension or permanent ban depending on severity."
+  }
+]

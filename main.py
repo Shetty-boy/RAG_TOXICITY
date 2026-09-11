@@ -5,16 +5,18 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from contextlib import asynccontextmanager
 import json
 import os
+from rag_pipeline import RAGPipeline
 
 # Global variables to hold our model, tokenizer, and config
 model = None
 tokenizer = None
 label_names = []
 label_thresholds = {}
+rag_pipeline = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model, tokenizer, label_names, label_thresholds
+    global model, tokenizer, label_names, label_thresholds, rag_pipeline
     print("Starting up: Loading model and config into memory...")
     model_path = "./best_multilabel_model"
     
@@ -34,6 +36,10 @@ async def lifespan(app: FastAPI):
     
     # Put the model in evaluation mode
     model.eval() 
+    
+    # Initialize RAG Pipeline
+    rag_pipeline = RAGPipeline(db_path="chroma_db", bm25_dir="bm25_indices")
+    
     print("Model and config loaded successfully!")
     yield
     print("Shutting down: Clearing memory...")
@@ -91,3 +97,27 @@ def predict(request: PredictionRequest):
         "predicted_labels": predicted_labels,
         "category_scores": category_scores
     }
+
+@app.post("/explain")
+def explain(request: PredictionRequest):
+    # First, run the standard prediction
+    pred_result = predict(request)
+    
+    route = pred_result["route"]
+    dominant_category = pred_result["dominant_category"]
+    
+    # Only invoke RAG pipeline if content is AMBIGUOUS or TOXIC
+    if route == "CLEAN":
+        pred_result["explanation"] = "Content is deemed safe. No policy matches."
+        pred_result["policy_matches"] = []
+        pred_result["suggested_action"] = "None"
+        pred_result["insufficient_evidence"] = False
+        return pred_result
+        
+    # Execute RAG explanation
+    explanation_result = rag_pipeline.explain(request.text, dominant_category)
+    
+    # Merge results
+    pred_result.update(explanation_result)
+    
+    return pred_result
